@@ -15,7 +15,7 @@
 STM --- MRF
 
  3V --> pin.1  [VCC]
-GND --> pin.2  [GND]        
+GND --> pin.2  [GND]
 PE2 --> pin.9  [SCK]
 PE5 --> pin.7  [SDO]
 PE6 --> pin.8  [SDI]
