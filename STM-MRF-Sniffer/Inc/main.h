@@ -1,3 +1,10 @@
+/**
+  ******************************************************************************
+  * @file   main.h
+  * @brief   main header.
+  ******************************************************************************
+*/
+
 /* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __MAIN_H
 #define __MAIN_H
@@ -5,7 +12,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
 #include "GUI.h"
-
 
 #include "stm32f429i_discovery.h"
 #include "stm32f429i_discovery_ts.h"
@@ -47,7 +53,7 @@
 #define OLMX_INT_PIN                    GPIO_PIN_4
 #define OLMX_INT_GPIO_PORT              GPIOD
 
-/* Size of buffer */
+/* Definition the size of buffer */
 #define BUFFERSIZE                      1
 
 /* Exported functions ------------------------------------------------------- */

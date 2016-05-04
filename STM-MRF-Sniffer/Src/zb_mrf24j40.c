@@ -1,6 +1,22 @@
+/**
+  ******************************************************************************
+  * @file   zb_mrf24j40.c
+  * @brief  Commands for communication between STM microcontroller
+  *         and MRF24J40 radio device.
+  * @note Most of the functions (marked with tag 'author') are taken from zboss free stack
+  *            (file mac/zb_mrf24j40.c)
+  ******************************************************************************
+*/
+
 #include "zb_mrf24j40.h"
 #include "main.h"
 
+/**
+  * @brief  Reads content of the register in a given short address.
+  * @author DSR
+  * @param  addr: Short 1-byte address
+  * @retval Content of register
+  */
 zb_uint8_t read_short_reg(zb_uint8_t addr)
 {
 	zb_uint8_t result;
@@ -11,6 +27,13 @@ zb_uint8_t read_short_reg(zb_uint8_t addr)
 	return result;
 }
 
+/**
+  * @brief  Writes given byte to the register in a given short address.
+  * @author DSR
+  * @param  addr: Short 1-byte address
+  * @param  tx_data: Data for writing
+  * @retval None
+  */
 void write_short_reg(zb_uint8_t addr,zb_uint8_t tx_data)
 {
 	select_radio();
@@ -19,6 +42,12 @@ void write_short_reg(zb_uint8_t addr,zb_uint8_t tx_data)
 	deselect_radio();
 }
 
+/**
+  * @brief  Reads content of the register in a given long address.
+  * @author DSR
+  * @param  addr: Long 2-bytes address
+  * @retval Content of register
+  */
 zb_uint8_t read_long_reg(zb_uint16_t addr)
 {
 	zb_uint8_t result;
@@ -32,6 +61,13 @@ zb_uint8_t read_long_reg(zb_uint16_t addr)
 	return result;
 }
 
+/**
+  * @brief  Writes given byte to the register in a given long address.
+  * @author DSR
+  * @param  addr: Long 2-bytes address
+  * @param  tx_data: Data for writing
+  * @retval None
+  */
 void write_long_reg(zb_uint16_t addr, zb_uint8_t tx_data)
 {
 	select_radio();
@@ -43,16 +79,32 @@ void write_long_reg(zb_uint16_t addr, zb_uint8_t tx_data)
 	deselect_radio();
 }
 
+/**
+  * @brief  Enables the Chip Select pin on device.
+  * @param  None
+  * @retval None
+  */
 void select_radio()
 {
         HAL_GPIO_WritePin(OLMX_CS_GPIO_PORT, OLMX_CS_PIN, GPIO_PIN_RESET);
 }
 
+/**
+  * @brief  Disables the Chip Select pin on device.
+  * @param  None
+  * @retval None
+  */
 void deselect_radio()
 {
         HAL_GPIO_WritePin(OLMX_CS_GPIO_PORT, OLMX_CS_PIN, GPIO_PIN_SET);
 }
 
+/**
+  * @brief  Sends the commands to device on selecting new channel.
+  * @author DSR
+  * @param  n: New channel
+  * @retval None
+  */
 void zb_transceiver_select_channel(zb_uint8_t n) //Works
 {
     uint8_t val = 0;
@@ -73,33 +125,53 @@ void zb_transceiver_select_channel(zb_uint8_t n) //Works
     ZB_WRITE_SHORT_REG(ZB_SREG_RFCTL, 0x00);
 }
 
+/**
+  * @brief  Reads the content of RXFIFO registers.
+  *         Gets the data received over radio and sends it to function RXPrint()
+  * @param  None
+  * @retval None
+  */
 void zb_read_rx_fifo()
 {
-    HAL_NVIC_DisableIRQ(EXTI1_IRQn);
+    /* Disable the interrapt on MCU and Chip Select pin on device */
+    HAL_NVIC_DisableIRQ(EXTI4_IRQn);
     DISABLE_AIR();
+    /* Calculate the length of received data */
     uint8_t i;
     uint16_t fifo = ZB_RX_FIFO;
     uint8_t frm_len = ZB_READ_LONG_REG(fifo);
     frm_len += 2;
+    /* Get the data */
     for (i = 0; i< frm_len; i++)
     {   
         fifo++;
         ZB_READ_LONG_REG(fifo);
+        /* Send received byte to handler */
         RXPrint();
 
     }
+    /* Enable the interrapt on MCU and Chip Select pin on device */
     ENABLE_AIR();
-    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+    HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 }
 
+/**
+  * @brief  Makes initial setup of MRF24J40 device.
+  *         Taken from zboss free stack except commands for hard reset in the beginning.
+  * @author DSR
+  * @param  None
+  * @retval None
+  */
 void zb_init_mrf24j40()
 {
-        //perform hard reset
+        /* perform hard reset */
+        /* Added by Lukin */
         uint16_t j;
         HAL_GPIO_WritePin(OLMX_RST_GPIO_PORT, OLMX_RST_PIN, GPIO_PIN_RESET);
         for(j=0;j<(uint16_t)300;j++){}
         HAL_GPIO_WritePin(OLMX_RST_GPIO_PORT, OLMX_RST_PIN, GPIO_PIN_SET);
         for(j=0;j<(uint16_t)300;j++){}
+        /*********************************/
         
 	//TRACE_MSG(TRACE_COMMON1, "zb_init_mrf24j40",(FMT__0));
 	DECLARE_VAR();
@@ -284,18 +356,24 @@ void zb_init_mrf24j40()
 	ZB_WRITE_LONG_REG(ZB_LREG_SCLKDIV, 0x01);
 }
 
+/**
+  * @brief  Makes initial setup of MRF24J40 device according to the algorithm 
+  *         described in device datasheet.
+  * @param  None
+  * @retval None
+  * @note   Differences from zboss stack version are marked in function code:
+  *       ? - commands present in datasheet ex., but absent in zb stack version, perhaps no need of them
+  *       ?! - absent in zb stack, where they should be, maybe they present in somewhere other place in stack
+  *       ! - commands absent in datasheet example, but mrf doesn't work w/o one of them (setting ZB_SREG_INTMSK)
+  */
 void ref_init_mrf24j40()
 {
-        //? - commands present in datasheet ex., but absent in zb stack version, perhaps no need of them
-        //?! - absent in zb stack, where they should be, maybe they present in somewhere other place in stack
-        //! - commands absent in datasheet example, but mrf doesn't work w/o one of them (setting ZB_SREG_INTMSK)
-  
-        //perform hard reset
-        uint16_t j;                                                          //?!
-        HAL_GPIO_WritePin(OLMX_RST_GPIO_PORT, OLMX_RST_PIN, GPIO_PIN_RESET); //?!
-        for(j=0;j<(uint16_t)300;j++){}                                       //?!
-        HAL_GPIO_WritePin(OLMX_RST_GPIO_PORT, OLMX_RST_PIN, GPIO_PIN_SET);   //?!
-        for(j=0;j<(uint16_t)300;j++){}                                       //?!
+        /* perform hard reset */
+        uint16_t j;                                                          // ?!
+        HAL_GPIO_WritePin(OLMX_RST_GPIO_PORT, OLMX_RST_PIN, GPIO_PIN_RESET); // ?!
+        for(j=0;j<(uint16_t)300;j++){}                                       // ?!
+        HAL_GPIO_WritePin(OLMX_RST_GPIO_PORT, OLMX_RST_PIN, GPIO_PIN_SET);   // ?!
+        for(j=0;j<(uint16_t)300;j++){}                                       // ?!
         
 	ZB_WRITE_SHORT_REG(ZB_SREG_RFCTL, 0x04);
         ZB_WRITE_SHORT_REG(ZB_SREG_RFCTL, 0x00);
@@ -308,15 +386,15 @@ void ref_init_mrf24j40()
 	ZB_WRITE_SHORT_REG(ZB_SREG_SADRL,0xff);  
 
         ZB_WRITE_LONG_REG(ZB_LREG_RFCTRL2, 0x80);
-        ZB_WRITE_LONG_REG(ZB_LREG_RFCTRL3, 0x00); //?
+        ZB_WRITE_LONG_REG(ZB_LREG_RFCTRL3, 0x00); // ?
         ZB_WRITE_LONG_REG(ZB_LREG_RFCTRL6, 0x80);
         ZB_WRITE_LONG_REG(ZB_LREG_RFCTRL8, 0x10);
         ZB_WRITE_SHORT_REG(ZB_SREG_BBREG2,0x78);
         ZB_WRITE_SHORT_REG(ZB_SREG_BBREG6, 0x40);
-        ZB_WRITE_SHORT_REG(ZB_SREG_BBREG7, 0x00); //?
+        ZB_WRITE_SHORT_REG(ZB_SREG_BBREG7, 0x00); // ?
         ZB_WRITE_LONG_REG(ZB_LREG_RFCTRL0, CHANNEL_11);
-        ZB_WRITE_SHORT_REG(ZB_SREG_INTMSK,0xF7);   //! enable only RX interrupt
-        ZB_WRITE_SHORT_REG(ZB_SREG_RXMCR,0x03);  //! receive all packets (including with errors: CRC, frametypes, etc.)
+        ZB_WRITE_SHORT_REG(ZB_SREG_INTMSK,0xF7);   // ! enable only RX interrupt
+        ZB_WRITE_SHORT_REG(ZB_SREG_RXMCR,0x03);  // ! receive all packets (including with errors: CRC, frametypes, etc.)
         
 	ZB_WRITE_SHORT_REG(ZB_SREG_RFCTL, 0x04);
         ZB_WRITE_SHORT_REG(ZB_SREG_RFCTL, 0x00);

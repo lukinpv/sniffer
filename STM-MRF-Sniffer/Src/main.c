@@ -1,3 +1,10 @@
+/**
+  ******************************************************************************
+  * @file   main.c
+  * @brief  main program file.
+  ******************************************************************************
+*/
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "WM.h"
@@ -6,7 +13,7 @@
 /* Private variables ---------------------------------------------------------*/
 uint8_t GUI_Initialized = 0;
 
-/* SPI */
+/* SPI related global variables */
 SPI_HandleTypeDef SpiHandle;
 uint8_t aTxBuffer[BUFFERSIZE];
 uint8_t aRxBuffer[BUFFERSIZE];
@@ -28,19 +35,34 @@ void board_spi_test(void);
 
 /* Private functions ---------------------------------------------------------*/
 
+/**
+  * @brief  Sets the channel for sniffing. 
+  *         Value of channel is stored in global variable
+  * @param  None
+  * @retval None
+  */
 void setNewChannel(void) {
+  /* Report command on channel setting to device */
   zb_transceiver_select_channel(channel);
   
+  /* Indicate the value of channel at top of the display */
   GUI_Clear();
   GUI_DispString("Channel: ");
   GUI_DispChar('0'+channel/10);
   GUI_DispChar('0'+channel%10);
+  /* Check the changing by printing hex value of channel read from device register */
   GUI_DispString(" - 0x");
   ZB_READ_LONG_REG(ZB_LREG_RFCTRL0);
   RXPrint();
   GUI_DispNextLine();
 }
 
+/**
+  * @brief  Converts data to hexadecimal representation for display
+  * @param  c: byte to convert
+  * @param  h: array of 2 hex digits
+  * @retval None
+  */
 void byteToHex(uint8_t c, char* h) {
   h[0]=hdigits[c >> 4];
   h[1]=hdigits[c & 0x0F];
@@ -55,7 +77,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
   if(GPIO_Pin == KEY_BUTTON_PIN)
   {
-    /* next channel */
+    /* Selecting next channel */
     if(++channel>26)
       channel = 11; 
     setNewChannel();
@@ -63,7 +85,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
   else if(GPIO_Pin == OLMX_INT_PIN)
   {
-    /* receiving packet */
+    /* Receiving the packet */
     BSP_LED_On(LED3);
     zb_read_rx_fifo();
     ZB_READ_SHORT_REG(ZB_SREG_ISRSTS); //clearing interrapt register on mrf
@@ -71,7 +93,12 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
 }
 
-/* print the receiver */
+/**
+  * @brief Display the Rx buffer received by SPI from device
+  * @note This function can be considered and rewritten as a handler of received by SPI data
+  * @param None
+  * @retval None
+  */
 void RXPrint() {
    char i, hex[2];
    for(i=0;i<BUFFERSIZE;i++) {
@@ -79,11 +106,17 @@ void RXPrint() {
      GUI_DispChar(hex[0]);
      GUI_DispChar(hex[1]);
      GUI_DispChar(' ');
+     /* check the occupancy of screen line */
      if(GUI_GetDispPosX()+10 >= LCD_GetXSize())
        GUI_DispNextLine();
   }
 }
 
+/**
+  * @brief Visually tests the correctness of SPI settings by connecting MCU to itself (MISO pin <-> MOSI pin)
+  * @param None
+  * @retval None
+  */
 void board_spi_test() {
   int8_t i;
   const char message[]="Test 1";
@@ -97,12 +130,7 @@ void board_spi_test() {
 
 int main(void)
 {
-  /* STM32F4xx HAL library initialization:
-       - Configure the Flash prefetch, instruction and Data caches
-       - Configure the Systick to generate an interrupt each 1 msec
-       - Set NVIC Group Priority to 4
-       - Global MSP (MCU Support Package) initialization
-     */
+  /* STM32F4xx HAL library initialization */
   HAL_Init();
   
   /* Initialize LCD, LEDs, Button and Olimex Pins */
@@ -123,7 +151,7 @@ int main(void)
   SpiHandle.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
   SpiHandle.Init.Direction         = SPI_DIRECTION_2LINES;
   SpiHandle.Init.CLKPhase          = SPI_PHASE_1EDGE;
-  SpiHandle.Init.CLKPolarity       = SPI_POLARITY_LOW;                          /* taken from stack*/
+  SpiHandle.Init.CLKPolarity       = SPI_POLARITY_LOW;  /* taken from zboss stack */
   SpiHandle.Init.CRCCalculation    = SPI_CRCCALCULATION_DISABLE;
   SpiHandle.Init.CRCPolynomial     = 7;
   SpiHandle.Init.DataSize          = SPI_DATASIZE_8BIT;
@@ -132,18 +160,18 @@ int main(void)
   SpiHandle.Init.TIMode            = SPI_TIMODE_DISABLE;
   SpiHandle.Init.Mode              = SPI_MODE_MASTER;
   
+  /* Initialize the SPI connection */
   if(HAL_SPI_Init(&SpiHandle) != HAL_OK)
   {
     GUI_DispString("HAL SPI INIT ERROR");
     Error_Handler();
   }
 
+  /* Initialize the MRF24J40 device */
   INIT_MRF();
   
-  //initially channel is switched 2 times, if it set to 11 (0x00)
+  /* @note Initially channel is switched 2 times, if it set to 11 (0x00)*/
   setNewChannel();
- 
-  /* Infinite loop */
  
   while (1)
   {
@@ -157,10 +185,9 @@ int main(void)
   */
 static void BSP_Config(void)
 {
-  /* Initialize STM32F429I-DISCO's LEDs */
+  /* Initialize STM32F429I-DISCO's LEDs and User Button */
   BSP_LED_Init(LED3);
   BSP_LED_Init(LED4);
-  
   BSP_PB_Init(BUTTON_KEY, BUTTON_MODE_EXTI);
   
   /* Initializes the SDRAM device */
@@ -170,7 +197,7 @@ static void BSP_Config(void)
   __HAL_RCC_CRC_CLK_ENABLE();
   
   /***************************************************/
-  /* Olimex  pins configuration */
+  /* Configure the Olimex pins */
   
   /* CS & RST GPIO pins configuration */
   GPIO_InitTypeDef  GPIO_InitStruct;
@@ -182,7 +209,8 @@ static void BSP_Config(void)
   GPIO_InitStruct.Pin = OLMX_CS_PIN | OLMX_RST_PIN;
   HAL_GPIO_Init(OLMX_GPIO_PORT, &GPIO_InitStruct);
   
-  HAL_GPIO_WritePin(OLMX_GPIO_PORT, OLMX_CS_PIN, GPIO_PIN_SET);   //Chip Select on Device is Disabled initially
+  /* Initially disable Chip Select pin on Device */
+  HAL_GPIO_WritePin(OLMX_GPIO_PORT, OLMX_CS_PIN, GPIO_PIN_SET);   
   
   /* INT GPIO pin configuration */
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -190,7 +218,7 @@ static void BSP_Config(void)
   GPIO_InitStruct.Pin = OLMX_INT_PIN;
   HAL_GPIO_Init(OLMX_INT_GPIO_PORT, &GPIO_InitStruct);
   
-  /* configuring interrupt on olimex int pin */
+  /* Configure interrupt on olimex int pin */
   HAL_NVIC_SetPriority(EXTI4_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 }
@@ -212,6 +240,7 @@ static void BSP_Config(void)
   *            VDD(V)                         = 3.3
   *            Main regulator output voltage  = Scale1 mode
   *            Flash Latency(WS)              = 5
+  * @author STM
   * @param  None
   * @retval None
   */
@@ -254,12 +283,12 @@ static void SystemClock_Config(void)
 
 /**
   * @brief  This function is executed in case of error occurrence.
+  *         Lights up the LED4.
   * @param  None
   * @retval None
   */
 static void Error_Handler(void)
 {
-  /* Turn LED4 on */
   BSP_LED_On(LED4);
   while(1)
   {
@@ -269,8 +298,6 @@ static void Error_Handler(void)
 /**
   * @brief  SPI error callbacks
   * @param  hspi: SPI handle
-  * @note   This example shows a simple way to report transfer error, and you can
-  *         add your own implementation.
   * @retval None
   */
  void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
@@ -282,6 +309,11 @@ static void Error_Handler(void)
   BSP_LED_On(LED4);
 }
 
+/**
+  * @brief  Produces data exchange with device by SPI or displays a bug report in a case of failure
+  * @param  tx_data: byte to transmit
+  * @retval Received byte
+  */
 uint8_t spi_sync_exchange(uint8_t tx_data) {
     aTxBuffer[0] = tx_data;
     switch(HAL_SPI_TransmitReceive(&SpiHandle, aTxBuffer, aRxBuffer, BUFFERSIZE, SPITimeout))

@@ -1,3 +1,27 @@
+/***************************************************************************
+*                      ZBOSS ZigBee Pro 2007 stack                         *
+*                                                                          *
+*          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
+*                       http://www.dsr-wireless.com                        *
+*                                                                          *
+*                            All rights reserved.                          *
+*          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
+*                       http://www.claridy.com/                            *
+*                                                                          *
+*          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
+*                             Hsinchu, Taiwan.                             *
+*                       http://www.ubec.com.tw/                            *
+*                                                                          *
+*          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
+*                       http://www.dsr-wireless.com                        *
+*                                                                          *
+*                            All rights reserved.                          *
+*                                                                          *
+*  .......                                                                 *
+*                                                                          *
+*  @file    include/zb_mrf24j40_registers.h                                *
+****************************************************************************/
+
 // ------------------------- MRF REGISTERS DEFINES -------------- like ubec.
 
 #ifndef MRF24J40_REG_H_

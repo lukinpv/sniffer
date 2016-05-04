@@ -51,8 +51,8 @@ void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
 void LTDC_IRQHandler(void);
-void EXTI0_IRQHandler(void); // user button
-void EXTI4_IRQHandler(void); // int from mrf
+void EXTI0_IRQHandler(void);
+void EXTI4_IRQHandler(void);
 
 #ifdef __cplusplus
 }

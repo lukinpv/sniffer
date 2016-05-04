@@ -177,6 +177,11 @@ void EXTI0_IRQHandler(void)
   HAL_GPIO_EXTI_IRQHandler(KEY_BUTTON_PIN);
 }
 
+/**
+  * @brief  This function handles External line 4 interrupt request.
+  * @param  None
+  * @retval None
+  */
 void EXTI4_IRQHandler(void)
 {
   HAL_GPIO_EXTI_IRQHandler(OLMX_INT_PIN);

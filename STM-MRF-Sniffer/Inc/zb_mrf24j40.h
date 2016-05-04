@@ -1,4 +1,26 @@
-// zb_mrf24j40.h
+/***************************************************************************
+*                      ZBOSS ZigBee Pro 2007 stack                         *
+*                                                                          *
+*          Copyright (c) 2012 DSR Corporation Denver CO, USA.              *
+*                       http://www.dsr-wireless.com                        *
+*                                                                          *
+*                            All rights reserved.                          *
+*          Copyright (c) 2011 ClarIDy Solutions, Inc., Taipei, Taiwan.     *
+*                       http://www.claridy.com/                            *
+*                                                                          *
+*          Copyright (c) 2011 Uniband Electronic Corporation (UBEC),       *
+*                             Hsinchu, Taiwan.                             *
+*                       http://www.ubec.com.tw/                            *
+*                                                                          *
+*          Copyright (c) 2011 DSR Corporation Denver CO, USA.              *
+*                       http://www.dsr-wireless.com                        *
+*                                                                          *
+*                            All rights reserved.                          *
+*                                                                          *
+*  .......                                                                 *
+*                                                                          *
+*  @file    include/zb_mrf24j40.h                                          *
+****************************************************************************/
 
 #ifndef ZB_MRF24J40_H_
 #define ZB_MRF24J40_H_
@@ -13,8 +35,16 @@
 #define CHECK_L(reg)
 #endif
 
-//#define INIT_MRF() zb_init_mrf24j40()    // mrf init function from zb stack
-#define INIT_MRF() ref_init_mrf24j40()     // mrf init function from datasheet example
+/***********************************************************/
+/* Added by Lukin */
+
+/* Please, comment exactly one of the following two define commands. See file README.md */
+
+/* mrf init function from zb stack */
+//#define INIT_MRF() zb_init_mrf24j40()
+
+/* mrf init function from mrf24j40 datasheet example */
+#define INIT_MRF() ref_init_mrf24j40()
 
 #include "stdint.h"
 
@@ -27,6 +57,8 @@ typedef zb_int16_t         zb_int_t;
 typedef zb_int_t           zb_ret_t;
 
 void ref_init_mrf24j40(void);
+
+/***********************************************************/
 
 #define ZB_MAC_EXTRA_DATA_SIZE    9
 
